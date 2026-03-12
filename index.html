@@ -31,7 +31,7 @@
                 <h1 class="logo">NOAH <span class="accent">3D</span></h1>
                 <p>O PODER DA REALIDADE</p>
                 <button id="start-button">INICIAR CORRIDA</button>
-                <div class="controls-hint">ESPAÇO para pular • SETAS para mover</div>
+                <div class="controls-hint">A e D para mover</div>
             </div>
         </div>
 
@@ -63,6 +63,7 @@
                     const loader = new THREE.TextureLoader();
                     loader.load('assets/fundo_shrek.jpg', (texture) => {
                         this.scene.background = texture;
+                        console.log("🖼️ Shrek carregado!");
                     });
 
                     this.scene.fog = new THREE.Fog(0x000000, 20, 100);
@@ -129,10 +130,9 @@
                     window.addEventListener('keydown', (e) => {
                         if (!this.isPlaying) { if(e.key === ' ' || e.key === 'Enter') startFunc(); return; }
                         
-                        // Controles Noah: A para Esquerda, D para Direita
-                        // Pulo removido conforme solicitado
-                        if ((e.key === 'a' || e.key === 'A') && this.playerLane < 1) this.playerLane++;
-                        if ((e.key === 'd' || e.key === 'D') && this.playerLane > -1) this.playerLane--;
+                        // Controles Noah: A para Esquerda (-), D para Direita (+)
+                        if ((e.key === 'a' || e.key === 'A') && this.playerLane > -1) this.playerLane--;
+                        if ((e.key === 'd' || e.key === 'D') && this.playerLane < 1) this.playerLane++;
                     });
 
                     this.animate();
@@ -158,15 +158,9 @@
 
                     this.player.position.x += (this.playerLane * 4 - this.player.position.x) * 0.15;
 
-                    if (this.jumpVel) {
-                        this.player.position.y += this.jumpVel;
-                        this.jumpVel -= 0.015;
-                        if (this.player.position.y <= 1.1) { this.player.position.y = 1.1; this.jumpVel = 0; }
-                    }
-
                     if (++this.spawnTimer > 60) { this.spawn(); this.spawnTimer = 0; }
 
-                    const speed = 0.7 + (this.score * 0.0001);
+                    const speed = 0.8 + (this.score * 0.0001);
                     for (let i = this.obstacles.length - 1; i >= 0; i--) {
                         const o = this.obstacles[i];
                         o.position.z += speed;
