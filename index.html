@@ -3,63 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo do Noah 2 | Infinite Runner</title>
+    <title>Jogo do Noah 2 | 3D Reality Runner</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
 </head>
 <body>
     <div id="game-container">
-        <!-- HUD Superior -->
+        <!-- HUD -->
         <div id="hud">
-            <div id="score-container">
+            <div class="hud-item">
                 <span class="label">PONTOS</span>
                 <span id="score-value">0</span>
             </div>
-            <div id="coins-container">
-                <span class="label">🪙</span>
+            <div class="hud-item">
+                <span class="label">COLETADOS</span>
                 <span id="coins-value">0</span>
             </div>
         </div>
 
-        <!-- Canvas do Jogo -->
-        <canvas id="game-canvas"></canvas>
-
-        <!-- Overlay de Menu Inicial -->
+        <!-- Overlays -->
         <div id="start-screen" class="overlay active">
             <div class="content">
-                <h1>JOGO DO NOAH 2</h1>
-                <p>O MAIOR RUNNER DE TODOS OS TEMPOS</p>
+                <h1 class="logo">NOAH <span class="accent">3D</span></h1>
+                <p>O PODER DA REALIDADE</p>
                 <button id="start-button">INICIAR CORRIDA</button>
-                <div class="controls-hint">
-                    <span>Espaço / ↑ para Pular</span>
-                    <span>↓ para Abaixar</span>
-                    <span>← → para Desviar</span>
-                </div>
+                <div class="controls-hint">ESPAÇO para pular • SETAS para mover</div>
             </div>
         </div>
 
-        <!-- Overlay de Game Over -->
         <div id="game-over-screen" class="overlay">
             <div class="content">
-                <h1 class="critical">FIM DE JOGO!</h1>
+                <h1 class="critical">FIM DE JOGO</h1>
                 <div class="stats">
-                    <div class="stat-item">
-                        <span class="label">Pontuação:</span>
-                        <span id="final-score">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="label">Recorde:</span>
-                        <span id="high-score">0</span>
-                    </div>
+                    <span id="final-score">0</span>
+                    <span class="label">SCORE TOTAL</span>
                 </div>
-                <button id="restart-button">TENTAR NOVAMENTE</button>
+                <button id="restart-button">RECOMEÇAR</button>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- O Canvas será gerado pelo Three.js -->
     <script type="module" src="src/main.js"></script>
 </body>
 </html>

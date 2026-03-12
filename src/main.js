@@ -1,210 +1,189 @@
-// Importações
-import { Player } from './entities/player.js';
-import { ObstacleManager } from './entities/obstacles.js';
-import { ParticleManager } from './engine/particles.js';
+import * as THREE from 'three';
 
 class Game {
     constructor() {
-        console.log("🛠️ Tentando inicializar o Jogo...");
-        
-        this.canvas = document.getElementById('game-canvas');
-        if (!this.canvas) {
-            console.error("❌ Erro: Canvas não encontrado!");
-            return;
-        }
-        
-        this.ctx = this.canvas.getContext('2d');
-        
         this.score = 0;
         this.coins = 0;
-        this.highScore = localStorage.getItem('noah2_highScore') || 0;
-        this.isGameOver = false;
         this.isPlaying = false;
+        this.isGameOver = false;
 
-        // Elementos da UI
-        this.startScreen = document.getElementById('start-screen');
-        this.gameOverScreen = document.getElementById('game-over-screen');
-        this.scoreElement = document.getElementById('score-value');
-        this.coinsElement = document.getElementById('coins-value');
-        this.finalScoreElement = document.getElementById('final-score');
-        this.highScoreElement = document.getElementById('high-score');
+        // Configuração Three.js
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x050505);
+        this.scene.fog = new THREE.Fog(0x050505, 10, 50);
 
-        // Instanciar Entidades ANTES do init
-        try {
-            this.player = new Player(this);
-            this.obstacles = new ObstacleManager(this);
-            this.particles = new ParticleManager(this);
-            console.log("✅ Entidades criadas com sucesso.");
-        } catch (e) {
-            console.error("❌ Erro ao criar entidades:", e);
-        }
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.set(0, 3, 8);
+        this.camera.lookAt(0, 0, 0);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.shadowMap.enabled = true;
+        document.getElementById('game-container').appendChild(this.renderer.domElement);
+
+        // Iluminação Realista
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        this.scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+        sunLight.position.set(5, 10, 5);
+        sunLight.castShadow = true;
+        this.scene.add(sunLight);
+
+        // Chão/Terreno Real (Asfalto/Pista)
+        const groundGeometry = new THREE.PlaneGeometry(20, 1000);
+        const groundMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x111111,
+            roughness: 0.8
+        });
+        this.ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        this.ground.rotation.x = -Math.PI / 2;
+        this.ground.receiveShadow = true;
+        this.scene.add(this.ground);
+
+        // Jogador (Boneco Totalmente Preto)
+        const playerGeo = new THREE.BoxGeometry(1, 2, 1);
+        const playerMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0 });
+        this.player = new THREE.Mesh(playerGeo, playerMat);
+        this.player.position.y = 1;
+        this.player.castShadow = true;
+        this.scene.add(this.player);
+
+        // Estado do Jogador
+        this.playerLane = 0; // -1, 0, 1
+        this.playerTargetX = 0;
+        this.isJumping = false;
+        this.jumpVelocity = 0;
+
+        // Obstáculos
+        this.obstacles = [];
+        this.spawnTimer = 0;
+
+        // UI
+        this.scoreEl = document.getElementById('score-value');
+        this.coinsEl = document.getElementById('coins-value');
+        this.startBtn = document.getElementById('start-button');
+        this.restartBtn = document.getElementById('restart-button');
+        this.startOverlay = document.getElementById('start-screen');
+        this.gameOverOverlay = document.getElementById('game-over-screen');
 
         this.init();
     }
 
     init() {
-        this.resize();
-        window.addEventListener('resize', () => this.resize());
+        this.setupEvents();
+        this.animate();
+    }
 
-        // Botões
-        const startBtn = document.getElementById('start-button');
-        const restartBtn = document.getElementById('restart-button');
+    setupEvents() {
+        this.startBtn.onclick = () => this.start();
+        this.restartBtn.onclick = () => this.start();
 
-        if (startBtn) {
-            startBtn.onclick = (e) => {
-                console.log("🖱️ Botão INICIAR clicado!");
-                e.stopPropagation();
-                this.start();
-            };
-        } else {
-            console.error("❌ Botão start-button não encontrado no HTML!");
-        }
-
-        if (restartBtn) {
-            restartBtn.onclick = (e) => {
-                console.log("🖱️ Botão RESTART clicado!");
-                e.stopPropagation();
-                this.start();
-            };
-        }
-
-        // Suporte para teclado
         window.addEventListener('keydown', (e) => {
-            if (!this.isPlaying && (e.key === 'Enter' || e.key === ' ')) {
-                console.log("⌨️ Iniciando via teclado!");
-                this.start();
+            if (!this.isPlaying) return;
+            if (e.key === 'ArrowLeft' && this.playerLane < 1) this.playerLane++;
+            if (e.key === 'ArrowRight' && this.playerLane > -1) this.playerLane--;
+            if (e.key === ' ' && !this.isJumping) {
+                this.isJumping = true;
+                this.jumpVelocity = 0.2;
             }
         });
 
-        // Loop principal
-        this.lastTime = 0;
-        requestAnimationFrame((t) => this.loop(t));
-        
-        console.log("🎮 Jogo do Noah 2 Pronto!");
-    }
-
-    resize() {
-        const container = document.getElementById('game-container');
-        if (container) {
-            this.canvas.width = container.clientWidth;
-            this.canvas.height = container.clientHeight;
-            if (this.player) this.player.resize();
-        }
+        window.addEventListener('resize', () => {
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     }
 
     start() {
-        console.log("🏁 Função start() executada!");
+        this.isPlaying = true;
+        this.isGameOver = false;
         this.score = 0;
         this.coins = 0;
-        this.isGameOver = false;
-        this.isPlaying = true;
+        this.playerLane = 0;
+        this.player.position.set(0, 1, 0);
         
-        // Atualizar UI
-        if (this.startScreen) this.startScreen.classList.remove('active');
-        if (this.gameOverScreen) this.gameOverScreen.classList.remove('active');
-        
-        this.scoreElement.innerText = "0";
-        this.coinsElement.innerText = "0";
-        
-        // Reset de entidades
-        if (this.player) this.player.reset();
-        if (this.obstacles) this.obstacles.reset();
-        
-        console.log("🚀 Corrida em andamento!");
+        // Limpar obstáculos antigos
+        this.obstacles.forEach(o => this.scene.remove(o.mesh));
+        this.obstacles = [];
+
+        this.startOverlay.classList.remove('active');
+        this.gameOverOverlay.classList.remove('active');
+    }
+
+    spawnObstacle() {
+        const lane = Math.floor(Math.random() * 3) - 1;
+        const geo = new THREE.BoxGeometry(2, Math.random() * 2 + 1, 1);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(lane * 3, mesh.geometry.parameters.height / 2, -100);
+        mesh.castShadow = true;
+        this.scene.add(mesh);
+        this.obstacles.push({ mesh, lane });
     }
 
     gameOver() {
-        this.isGameOver = true;
         this.isPlaying = false;
-        
-        if (this.score > this.highScore) {
-            this.highScore = this.score;
-            localStorage.setItem('noah2_highScore', this.highScore);
-        }
-
-        this.finalScoreElement.innerText = Math.floor(this.score);
-        this.highScoreElement.innerText = Math.floor(this.highScore);
-        this.gameOverScreen.classList.add('active');
+        this.isGameOver = true;
+        document.getElementById('final-score').innerText = Math.floor(this.score);
+        this.gameOverOverlay.classList.add('active');
     }
 
     update(deltaTime) {
-        if (!this.isPlaying || this.isGameOver) return;
+        if (!this.isPlaying) return;
 
-        // Aumentar pontuação gradualmente
-        this.score += deltaTime * 0.01;
-        this.scoreElement.innerText = Math.floor(this.score);
+        this.score += deltaTime * 0.1;
+        this.scoreEl.innerText = Math.floor(this.score);
 
-        // Atualizar Entidades
-        this.player.update(deltaTime);
-        this.obstacles.update(deltaTime);
-        this.particles.update(deltaTime);
+        // Movimento do Jogador (Lanes)
+        this.playerTargetX = this.playerLane * 3;
+        this.player.position.x += (this.playerTargetX - this.player.position.x) * 0.1;
 
-        // Rastro do jogador
-        if (this.isPlaying && !this.player.isJumping) {
-            this.particles.create(this.player.x, this.player.baseY + 5, '#2ecc71', 1, 0.5);
-        }
-    }
-
-    draw() {
-        // Limpar
-        this.ctx.fillStyle = '#1a2a1a';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Desenhar Fundo (Floresta)
-        const horizonY = this.canvas.height * 0.4;
-        
-        // Céu
-        const skyGrad = this.ctx.createLinearGradient(0, 0, 0, horizonY);
-        skyGrad.addColorStop(0, '#0a1a0a');
-        skyGrad.addColorStop(1, '#2d4a2d');
-        this.ctx.fillStyle = skyGrad;
-        this.ctx.fillRect(0, 0, this.canvas.width, horizonY);
-
-        // Chão
-        const floorGrad = this.ctx.createLinearGradient(0, horizonY, 0, this.canvas.height);
-        floorGrad.addColorStop(0, '#1b301b');
-        floorGrad.addColorStop(1, '#0d1a0d');
-        this.ctx.fillStyle = floorGrad;
-        this.ctx.fillRect(0, horizonY, this.canvas.width, this.canvas.height - horizonY);
-
-        // Árvores
-        this.ctx.fillStyle = 'rgba(0, 20, 0, 0.5)';
-        for (let i = 0; i < 10; i++) {
-            const tx = (i * (this.canvas.width / 8)) + Math.sin(this.lastTime * 0.001 + i) * 10;
-            this.ctx.beginPath();
-            this.ctx.moveTo(tx, horizonY);
-            this.ctx.lineTo(tx + 20, horizonY - 60);
-            this.ctx.lineTo(tx + 40, horizonY);
-            this.ctx.fill();
+        // Pulo do Jogador
+        if (this.isJumping) {
+            this.player.position.y += this.jumpVelocity;
+            this.jumpVelocity -= 0.01;
+            if (this.player.position.y <= 1) {
+                this.player.position.y = 1;
+                this.isJumping = false;
+            }
         }
 
-        // Linha do horizonte
-        this.ctx.shadowBlur = 30;
-        this.ctx.shadowColor = '#2ecc71';
-        this.ctx.strokeStyle = 'rgba(46, 204, 113, 0.2)';
-        this.ctx.lineWidth = 4;
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, horizonY);
-        this.ctx.lineTo(this.canvas.width, horizonY);
-        this.ctx.stroke();
-        this.ctx.shadowBlur = 0;
+        // Spawn de Obstáculos
+        this.spawnTimer += deltaTime;
+        if (this.spawnTimer > 1000) {
+            this.spawnObstacle();
+            this.spawnTimer = 0;
+        }
 
-        // Desenhar Entidades
-        this.obstacles.draw();
-        this.particles.draw();
-        this.player.draw();
+        // Mover Obstáculos e Chão (Simular movimento)
+        const speed = 0.5 + (this.score * 0.0001);
+        this.obstacles.forEach((obs, index) => {
+            obs.mesh.position.z += speed;
+
+            // Colisão
+            const dx = Math.abs(obs.mesh.position.x - this.player.position.x);
+            const dz = Math.abs(obs.mesh.position.z - this.player.position.z);
+            const dy = this.player.position.y - obs.mesh.geometry.parameters.height;
+
+            if (dx < 1.5 && dz < 1 && dy < 0) {
+                this.gameOver();
+            }
+
+            if (obs.mesh.position.z > 10) {
+                this.scene.remove(obs.mesh);
+                this.obstacles.splice(index, 1);
+            }
+        });
     }
 
-    loop(timestamp) {
-        const deltaTime = timestamp - this.lastTime;
-        this.lastTime = timestamp;
-
-        this.update(deltaTime);
-        this.draw();
-
-        requestAnimationFrame((t) => this.loop(t));
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        const delta = 16.6; // Simulado
+        this.update(delta);
+        this.renderer.render(this.scene, this.camera);
     }
 }
 
-// Iniciar o jogo
 new Game();
