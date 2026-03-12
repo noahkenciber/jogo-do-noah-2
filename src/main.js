@@ -34,9 +34,26 @@ class Game {
         this.resize();
         window.addEventListener('resize', () => this.resize());
 
-        // Botões
-        document.getElementById('start-button').onclick = () => this.start();
-        document.getElementById('restart-button').onclick = () => this.start();
+        // Botões com feedback de som ou log
+        const startBtn = document.getElementById('start-button');
+        const restartBtn = document.getElementById('restart-button');
+
+        startBtn.onclick = (e) => {
+            e.preventDefault();
+            this.start();
+        };
+
+        restartBtn.onclick = (e) => {
+            e.preventDefault();
+            this.start();
+        };
+
+        // Suporte para iniciar com Espaço/Enter no menu
+        window.addEventListener('keydown', (e) => {
+            if (!this.isPlaying && (e.key === 'Enter' || e.key === ' ')) {
+                this.start();
+            }
+        });
 
         // Loop principal
         this.lastTime = 0;
@@ -134,7 +151,7 @@ class Game {
         this.ctx.stroke();
         this.ctx.shadowBlur = 0;
 
-        // Desenhar Entidades
+        // Desenhar Entidades (Sempre, para mostrar o menu inicial bonito)
         this.obstacles.draw();
         this.particles.draw();
         this.player.draw();
@@ -152,6 +169,4 @@ class Game {
 }
 
 // Iniciar o jogo
-window.onload = () => {
-    new Game();
-};
+new Game();
