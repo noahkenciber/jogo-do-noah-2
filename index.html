@@ -130,7 +130,7 @@
                     window.addEventListener('keydown', (e) => {
                         if (!this.isPlaying) { if(e.key === ' ' || e.key === 'Enter') startFunc(); return; }
                         
-                        // Controles Noah: D para Esquerda (-), A para Direita (+)
+                        // Controles Invertidos Noah: D para Esquerda (-), A para Direita (+)
                         if ((e.key === 'd' || e.key === 'D') && this.playerLane > -1) this.playerLane--;
                         if ((e.key === 'a' || e.key === 'A') && this.playerLane < 1) this.playerLane++;
                     });
@@ -158,9 +158,11 @@
 
                     this.player.position.x += (this.playerLane * 4 - this.player.position.x) * 0.15;
 
-                    if (++this.spawnTimer > 60) { this.spawn(); this.spawnTimer = 0; }
+                    // Mais obstáculos (Spawn mais rápido)
+                    if (++this.spawnTimer > 35) { this.spawn(); this.spawnTimer = 0; }
 
-                    const speed = 0.8 + (this.score * 0.0001);
+                    // Aceleração progressiva mais intensa
+                    const speed = 0.9 + (this.score * 0.001);
                     for (let i = this.obstacles.length - 1; i >= 0; i--) {
                         const o = this.obstacles[i];
                         o.position.z += speed;
