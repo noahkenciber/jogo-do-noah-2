@@ -15,10 +15,10 @@ export class ObstacleManager {
         this.spawnTimer = 0;
         
         this.types = [
-            { id: 'BOX', color: '#ff7700', height: 40, width: 40, type: 'jump' },
-            { id: 'WALL', color: '#555555', height: 120, width: 30, type: 'dodge' },
-            { id: 'HOLE', color: '#000000', height: 10, width: 80, type: 'jump', isHole: true },
-            { id: 'ENEMY', color: '#ff0055', height: 50, width: 40, type: 'any' }
+            { id: 'LOG', color: '#5d4037', height: 40, width: 60, type: 'jump' }, // Tronco
+            { id: 'ROCK', color: '#7f8c8d', height: 60, width: 50, type: 'dodge' }, // Rocha
+            { id: 'BUSH', color: '#1b5e20', height: 45, width: 55, type: 'jump' }, // Arbusto
+            { id: 'ENEMY', color: '#c0392b', height: 50, width: 40, type: 'any' } // Criatura
         ];
 
         this.init();
@@ -147,13 +147,12 @@ export class ObstacleManager {
         if (player.currentLane !== obs.lane) return false;
 
         // Lógica de Pulo/Abaixar baseada no tipo
-        if (obs.id === 'BOX' || obs.id === 'HOLE' || obs.id === 'ENEMY') {
-            if (player.isJumping) return false; // Pulo desvia desses
+        if (obs.id === 'LOG' || obs.id === 'BUSH' || obs.id === 'ENEMY') {
+            if (player.isJumping) return false; 
         }
         
-        if (obs.id === 'WALL') {
-            // Parede não pode ser pulada, mas talvez precise de lane switch (já checado acima)
-            return true; 
+        if (obs.id === 'ROCK') {
+            return true; // Rocha costuma ser alta ou larga demais para pular facilmente (dodge)
         }
 
         return true; // Colidiu
@@ -163,9 +162,9 @@ export class ObstacleManager {
         const centerX = this.game.canvas.width / 2;
         const horizonY = this.game.canvas.height * 0.4;
 
-        // Desenhar trilhos (3D)
-        this.ctx.strokeStyle = 'rgba(112, 0, 255, 0.2)';
-        this.ctx.lineWidth = 2;
+        // Desenhar trilhos (Caminho da Floresta)
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        this.ctx.lineWidth = 1;
         for (let i = 0; i <= 3; i++) {
             const xOffset = (i - 1.5) * (this.game.canvas.width / 3);
             this.ctx.beginPath();

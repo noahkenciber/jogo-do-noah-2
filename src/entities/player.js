@@ -129,13 +129,13 @@ export class Player {
         this.ctx.ellipse(this.x, this.baseY + 10, 30, 10, 0, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Personagem (Estilo Neon Cyberpunk)
+        // Personagem (Estilo Guardião da Floresta)
         const gradient = this.ctx.createLinearGradient(this.x - 20, drawY, this.x + 20, drawY + drawHeight);
-        gradient.addColorStop(0, '#00f2ff');
-        gradient.addColorStop(1, '#7000ff');
+        gradient.addColorStop(0, '#f1c40f'); // Amarelo sol
+        gradient.addColorStop(1, '#27ae60'); // Verde floresta
 
-        this.ctx.shadowBlur = 15;
-        this.ctx.shadowColor = '#00f2ff';
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowColor = '#2ecc71';
         this.ctx.fillStyle = gradient;
         
         // Corpo arredondado
@@ -144,7 +144,7 @@ export class Player {
         // Detalhes (Visor)
         this.ctx.fillStyle = '#111';
         this.ctx.fillRect(this.x - 15, drawY + 15, 30, 10);
-        this.ctx.fillStyle = '#00f2ff';
+        this.ctx.fillStyle = '#f1c40f';
         this.ctx.fillRect(this.x - 10, drawY + 18, 5, 2);
 
         this.ctx.restore();

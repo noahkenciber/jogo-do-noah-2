@@ -112,39 +112,50 @@ class Game {
         this.obstacles.update(deltaTime);
         this.particles.update(deltaTime);
 
-        // Efeito de rastro no jogador
+        // Efeito de rastro no jogador (Verde Esmeralda)
         if (this.isPlaying && !this.player.isJumping) {
-            this.particles.create(this.player.x, this.player.baseY + 5, '#00f2ff', 1, 0.5);
+            this.particles.create(this.player.x, this.player.baseY + 5, '#2ecc71', 1, 0.5);
         }
     }
 
     draw() {
         // Limpar
-        this.ctx.fillStyle = '#0a0a0c';
+        this.ctx.fillStyle = '#1a2a1a';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Desenhar Fundo (Horizonte Neon)
+        // Desenhar Fundo (Floresta)
         const horizonY = this.canvas.height * 0.4;
         
-        // Céu
+        // Céu (Crepúsculo na Floresta)
         const skyGrad = this.ctx.createLinearGradient(0, 0, 0, horizonY);
-        skyGrad.addColorStop(0, '#020205');
-        skyGrad.addColorStop(1, '#10002b');
+        skyGrad.addColorStop(0, '#0a1a0a');
+        skyGrad.addColorStop(1, '#2d4a2d');
         this.ctx.fillStyle = skyGrad;
         this.ctx.fillRect(0, 0, this.canvas.width, horizonY);
 
-        // Chão (Pista Cyberpunk)
+        // Chão (Grama/Terra)
         const floorGrad = this.ctx.createLinearGradient(0, horizonY, 0, this.canvas.height);
-        floorGrad.addColorStop(0, '#10002b');
-        floorGrad.addColorStop(1, '#050505');
+        floorGrad.addColorStop(0, '#1b301b');
+        floorGrad.addColorStop(1, '#0d1a0d');
         this.ctx.fillStyle = floorGrad;
         this.ctx.fillRect(0, horizonY, this.canvas.width, this.canvas.height - horizonY);
 
-        // Brilho do Horizonte
-        this.ctx.shadowBlur = 40;
-        this.ctx.shadowColor = '#7000ff';
-        this.ctx.strokeStyle = '#7000ff';
-        this.ctx.lineWidth = 2;
+        // Silhuetas de Árvores no Horizonte
+        this.ctx.fillStyle = 'rgba(0, 20, 0, 0.5)';
+        for (let i = 0; i < 10; i++) {
+            const tx = (i * (this.canvas.width / 8)) + Math.sin(this.lastTime * 0.001 + i) * 10;
+            this.ctx.beginPath();
+            this.ctx.moveTo(tx, horizonY);
+            this.ctx.lineTo(tx + 20, horizonY - 60);
+            this.ctx.lineTo(tx + 40, horizonY);
+            this.ctx.fill();
+        }
+
+        // Brilho do Horizonte (Névoa da Floresta)
+        this.ctx.shadowBlur = 30;
+        this.ctx.shadowColor = '#2ecc71';
+        this.ctx.strokeStyle = 'rgba(46, 204, 113, 0.2)';
+        this.ctx.lineWidth = 4;
         this.ctx.beginPath();
         this.ctx.moveTo(0, horizonY);
         this.ctx.lineTo(this.canvas.width, horizonY);
